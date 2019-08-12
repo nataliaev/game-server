@@ -32,11 +32,11 @@ const User = db.define("user", {
 const Room = db.define("room", {
   name: Sequelize.STRING,
   stage: {
-    type: sequelize.INTEGER,
+    type: Sequelize.INTEGER,
     defaultValue: 10
   },
   round: {
-    type: sequelize.INTEGER,
+    type: Sequelize.INTEGER,
     defaultValue: 1
   },
   status: {
@@ -51,9 +51,11 @@ const Choice = db.define("choice", {
 });
 
 Choice.belongsTo(User);
+Choice.belongsTo(Room);
 User.belongsTo(Room);
 User.hasMany(Choice);
 Room.hasMany(User);
+Room.hasMany(Choice);
 
 const stream = new Sse();
 
@@ -66,7 +68,7 @@ const jsonParser = bodyParser.json();
 app.use(jsonParser);
 
 app.get("/stream", async (request, response) => {
-  const rooms = await Room.findAll({ include: [User, Choice] });
+  const rooms = await Room.findAll({ include: [User, Choice]});
 
   const data = JSON.stringify(rooms);
   stream.updateInit(data);
@@ -83,23 +85,26 @@ app.post("/choice", async (request, response) => {
   let entity;
 
   if (room.status === "started") {
-    const choices = await Room.find({ where: { roomId, round: room.round } });
+    const choices = await Room.findOne({ where: { id: room.id, round: room.round }, include: [User, Choice] });
 
-    entity = Choice.create({ userId, roomId, value, round: room.round });
+    entity = await Choice.create({ userId, roomId, value, round: room.round });
 
-    if (choices.length) {
-      const [other] = choices;
+    if (choices.choices.length) {
+      const [other] = choices.choices;
+      console.log('OTHEEEEEER', other)
+      console.log('VALUE', value)
 
-      const next = value === other.value ? room.stage + 1 : room.stage - 1;
+      const next = parseInt(value) === parseInt(other.value) ? room.stage + 1 : room.stage - 1;
+      console.log('NEEEEEXT', next)
 
-      if (next < 0 || next < 20) {
+      if (next < 0 || next > 20) {
         await room.update({ status: "done" });
       } else {
         await room.update({ stage: next });
       }
     }
   } else {
-    reponse.send("This game is not being played right now");
+    response.send("This game is not being played right now");
   }
 
   const rooms = await Room.findAll({
@@ -134,7 +139,7 @@ app.put("/rooms/:roomId", async (request, response) => {
 
   const { userId } = request.body;
 
-  if (room.status === "joining" && room.user.length < 2) {
+  if (room.status === "joining" && room.users.length < 2) {
     await User.update({ roomId: request.params.roomId }, { where: { userId } });
   }
 
