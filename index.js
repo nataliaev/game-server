@@ -91,11 +91,8 @@ app.post("/choice", async (request, response) => {
 
     if (choices.choices.length) {
       const [other] = choices.choices;
-      console.log('OTHEEEEEER', other)
-      console.log('VALUE', value)
 
       const next = parseInt(value) === parseInt(other.value) ? room.stage + 1 : room.stage - 1;
-      console.log('NEEEEEXT', next)
 
       if (next < 0 || next > 20) {
         await room.update({ status: "done" });
