@@ -132,15 +132,15 @@ app.post("/rooms", async (request, response) => {
 });
 
 app.put("/rooms/:roomId", async (request, response) => {
-  const room = await Room.findByPk(request.params.roomId, { include: [User] });
+  const room = await Room.findByPk(request.params.roomId, { include: [User, Choice] });
 
   const { userId } = request.body;
 
   if (room.status === "joining" && room.users.length < 2) {
-    await User.update({ roomId: request.params.roomId }, { where: { userId } });
+    await User.update({ roomId: request.params.roomId }, { where: { id: userId } });
   }
 
-  const rooms = await Room.findAll({ include: [User] })
+  const rooms = await Room.findAll({ include: [User, Choice] })
 
   const data = JSON.stringify(rooms);
 
