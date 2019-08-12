@@ -132,7 +132,7 @@ app.post("/rooms", async (request, response) => {
 });
 
 app.put("/rooms/:roomId", async (request, response) => {
-  const room = await Room.findByPk(request.params.roomId);
+  const room = await Room.findByPk(request.params.roomId, { include: [User] });
 
   const { userId } = request.body;
 
@@ -140,12 +140,14 @@ app.put("/rooms/:roomId", async (request, response) => {
     await User.update({ roomId: request.params.roomId }, { where: { userId } });
   }
 
-  const data = JSON.stringify(room);
+  const rooms = await Room.findAll({ include: [User] })
+
+  const data = JSON.stringify(rooms);
 
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(room);
+  response.send(rooms);
 });
 
 app.post("/users", async (request, response) => {
