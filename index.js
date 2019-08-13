@@ -81,9 +81,9 @@ app.post("/choice", async (request, response) => {
   console.log("request.body test:", request.body);
   const { value, userId, roomId } = request.body;
 
-  const room = await Room.findByPk(roomId);
+  const room = await Room.findByPk(roomId, { include: [User, Choice]});
 
-  if (room.status === "started") {
+  if (room.users.length === 2) {
     const choices = await Room.findOne({ where: { id: room.id, round: room.round }, include: [User, Choice] });
 
     await Choice.create({ userId, roomId, value, round: room.round });
