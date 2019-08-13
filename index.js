@@ -137,7 +137,7 @@ app.put("/rooms/:roomId", async (request, response) => {
 
   if (room.status === "joining" && room.users.length < 2) {
     await User.update({ roomId: request.params.roomId }, { where: { id: userId } });
-  }
+    }
 
   const rooms = await Room.findAll({ include: [User, Choice] })
 
