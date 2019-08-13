@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const Sequelize = require("sequelize");
 const bcrypt = require("bcrypt");
+const { toData, toJWT } = require('./auth/jwt')
 
 const databaseUrl =
   process.env.DATABASE_URL ||
@@ -66,6 +67,7 @@ app.use(middleware);
 
 const jsonParser = bodyParser.json();
 app.use(jsonParser);
+// app.use(jwtRouter)
 
 app.get("/stream", async (request, response) => {
   const rooms = await Room.findAll({ include: [User, Choice]});
@@ -114,7 +116,7 @@ app.post("/choice", async (request, response) => {
   response.send(rooms);
 });
 
-app.post("/rooms", async (request, response) => {
+app.post("/rooms", auth, async (request, response) => {
   const room = await Room.create(request.body);
 
   const rooms = await Room.findAll({
@@ -157,6 +159,78 @@ app.post("/users", async (request, response) => {
 
   response.send(user);
 });
+
+function auth(req, res, next) {
+  const auth = req.headers.authorization && req.headers.authorization.split(' ')
+  if (auth && auth[0] === 'Bearer' && auth[1]) {
+    try {
+      const data = toData(auth[1])
+      User
+        .findByPk(data.userId)
+        .then(user => {
+          if (!user) return next('User does not exist')
+
+          req.user = user
+          next()
+        })
+        .catch(next)
+    }
+    catch(error) {
+      res.status(400).send({
+        message: `Error ${error.name}: ${error.message}`,
+      })
+    }
+  }
+  else {
+    res.status(401).send({
+      message: 'Please supply some valid credentials'
+    })
+  }
+}
+
+app.post('/logins', (req, res) => {
+  if (!req.body.name || !req.body.password) {
+    res.status(400).send({
+      message: 'Please supply a valid name and password'
+    })
+  }
+  else {
+    // 1. find user based on name
+    User
+      .findOne({
+        where: {
+          name: req.body.name
+        }
+      })
+      .then(entity => {
+        if (!entity) {
+          res.status(400).send({
+            message: 'User with that email does not exist'
+          })
+        }
+
+        // 2. use bcrypt.compareSync to check the password against the stored hash
+        if (bcrypt.compareSync(req.body.password, entity.password)) {
+
+          // 3. if the password is correct, return a JWT with the userId of the user (user.id)
+          res.send({
+            jwt: toJWT({ userId: entity.id })
+          })
+        }
+        else {
+          res.status(400).send({
+            message: 'Password was incorrect'
+          })
+        }
+      })
+      .catch(err => {
+        console.error(err)
+        res.status(500).send({
+          message: 'Something went wrong'
+        })
+      })
+  }
+})
 
 const port = process.env.PORT || 5000;
 
