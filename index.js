@@ -67,7 +67,6 @@ app.use(middleware);
 
 const jsonParser = bodyParser.json();
 app.use(jsonParser);
-// app.use(jwtRouter)
 
 app.get("/stream", async (request, response) => {
   const rooms = await Room.findAll({ include: [User, Choice]});
@@ -116,7 +115,7 @@ app.post("/choice", async (request, response) => {
   response.send(rooms);
 });
 
-app.post("/rooms", auth, async (request, response) => {
+app.post("/rooms", async (request, response) => {
   const room = await Room.create(request.body);
 
   const rooms = await Room.findAll({
