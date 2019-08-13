@@ -212,11 +212,9 @@ app.post('/logins', (req, res) => {
         if (bcrypt.compareSync(req.body.password, entity.password)) {
 
           // 3. if the password is correct, return a JWT with the userId of the user (user.id)
-          res.send({
-            jwt: toJWT({ userId: entity.id }),
-            name: entity.name,
-            id: entity.id
-          })
+          res.send(entity
+            //jwt: toJWT({ userId: entity.id }),
+          )
         }
         else {
           res.status(400).send({
