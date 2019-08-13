@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const Sequelize = require("sequelize");
 const bcrypt = require("bcrypt");
+const { toData, toJWT } = require('./auth/jwt')
 
 const databaseUrl =
   process.env.DATABASE_URL ||
@@ -82,12 +83,10 @@ app.post("/choice", async (request, response) => {
 
   const room = await Room.findByPk(roomId);
 
-  let entity;
-
   if (room.status === "started") {
     const choices = await Room.findOne({ where: { id: room.id, round: room.round }, include: [User, Choice] });
 
-    entity = await Choice.create({ userId, roomId, value, round: room.round });
+    await Choice.create({ userId, roomId, value, round: room.round });
 
     if (choices.choices.length) {
       const [other] = choices.choices;
@@ -113,7 +112,7 @@ app.post("/choice", async (request, response) => {
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(entity);
+  response.send(rooms);
 });
 
 app.post("/rooms", async (request, response) => {
@@ -128,39 +127,111 @@ app.post("/rooms", async (request, response) => {
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(room);
+  response.send(rooms);
 });
 
 app.put("/rooms/:roomId", async (request, response) => {
-  const room = await Room.findByPk(request.params.roomId);
+  const room = await Room.findByPk(request.params.roomId, { include: [User, Choice] });
 
   const { userId } = request.body;
 
   if (room.status === "joining" && room.users.length < 2) {
-    await User.update({ roomId: request.params.roomId }, { where: { userId } });
+    await User.update({ roomId: request.params.roomId }, { where: { id: userId } });
   }
 
-  const data = JSON.stringify(room);
+  const rooms = await Room.findAll({ include: [User, Choice] })
+
+  const data = JSON.stringify(rooms);
 
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(room);
+  response.send(rooms);
 });
 
 app.post("/users", async (request, response) => {
-  const user = User.create({
+  const user = await User.create({
     name: request.body.name,
     email: request.body.email,
     password: bcrypt.hashSync(request.body.password, 10)
   });
-  const data = JSON.stringify(user);
-
-  stream.updateInit(data);
-  stream.send(data);
 
   response.send(user);
 });
+
+function auth(req, res, next) {
+  const auth = req.headers.authorization && req.headers.authorization.split(' ')
+  if (auth && auth[0] === 'Bearer' && auth[1]) {
+    try {
+      const data = toData(auth[1])
+      User
+        .findByPk(data.userId)
+        .then(user => {
+          if (!user) return next('User does not exist')
+
+          req.user = user
+          next()
+        })
+        .catch(next)
+    }
+    catch(error) {
+      res.status(400).send({
+        message: `Error ${error.name}: ${error.message}`,
+      })
+    }
+  }
+  else {
+    res.status(401).send({
+      message: 'Please supply some valid credentials'
+    })
+  }
+}
+
+app.post('/logins', (req, res) => {
+  if (!req.body.name || !req.body.password) {
+    res.status(400).send({
+      message: 'Please supply a valid name and password'
+    })
+  }
+  else {
+    // 1. find user based on name
+    User
+      .findOne({
+        where: {
+          name: req.body.name
+        }
+      })
+      .then(entity => {
+        if (!entity) {
+          res.status(400).send({
+            message: 'User with that email does not exist'
+          })
+        }
+
+        // 2. use bcrypt.compareSync to check the password against the stored hash
+        if (bcrypt.compareSync(req.body.password, entity.password)) {
+
+          // 3. if the password is correct, return a JWT with the userId of the user (user.id)
+          res.send({
+            jwt: toJWT({ userId: entity.id }),
+            name: entity.name,
+            id: entity.id
+          })
+        }
+        else {
+          res.status(400).send({
+            message: 'Password was incorrect'
+          })
+        }
+      })
+      .catch(err => {
+        console.error(err)
+        res.status(500).send({
+          message: 'Something went wrong'
+        })
+      })
+  }
+})
 
 const port = process.env.PORT || 5000;
 
