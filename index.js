@@ -149,17 +149,20 @@ app.put("/rooms/:roomId", async (request, response) => {
 });
 
 app.post("/users", async (request, response) => {
-  const user = User.create({
+  const user = await User.create({
     name: request.body.name,
     email: request.body.email,
     password: bcrypt.hashSync(request.body.password, 10)
   });
-  const data = JSON.stringify(user);
+
+  const rooms = await Room.findAll({ include: [User, Choice] })
+
+  const data = JSON.stringify(rooms);
 
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(user);
+  response.send(rooms);
 });
 
 const port = process.env.PORT || 5000;
