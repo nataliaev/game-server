@@ -174,6 +174,21 @@ app.post("/users", async (request, response) => {
   response.send(user);
 });
 
+app.put("/users/:id", async (request, response, next) => {
+  console.log(request.params.id)
+  User
+      .findByPk(request.params.id)
+      .then(user => {
+        console.log(user)
+        if (user) {
+          return user.update(request.body)
+            .then(user => response.json(user))
+        }
+        return response.status(404).end()
+      })
+      .catch(next)
+})
+
 function auth(req, res, next) {
   const auth =
     req.headers.authorization && req.headers.authorization.split(" ");
