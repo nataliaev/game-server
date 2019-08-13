@@ -152,6 +152,8 @@ app.put("/rooms/:roomId", async (request, response) => {
       { roomId: request.params.roomId },
       { where: { id: userId } }
     );
+  } else if (room.stage === 10 || room.stage === 0) {
+    await Room.update({ stage: 5, round: 1 }, { where: { id: room.id } });
   }
 
   const rooms = await Room.findAll({ include: [User, Choice] });
