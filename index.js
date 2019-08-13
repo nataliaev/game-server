@@ -155,11 +155,6 @@ app.post("/users", async (request, response) => {
     password: bcrypt.hashSync(request.body.password, 10)
   });
 
-  const data = JSON.stringify(user);
-
-  stream.updateInit(data);
-  stream.send(data);
-
   response.send(user);
 });
 
