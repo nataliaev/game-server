@@ -34,7 +34,7 @@ const Room = db.define("room", {
   name: Sequelize.STRING,
   stage: {
     type: Sequelize.INTEGER,
-    defaultValue: 10
+    defaultValue: 5
   },
   round: {
     type: Sequelize.INTEGER,
@@ -103,7 +103,7 @@ app.post("/choice", async (request, response) => {
           ? room.stage + 1
           : room.stage - 1;
 
-      if (next < 0 || next > 20) {
+      if (next < 0 || next > 10) {
         await room.update({ status: "done" });
       } else {
         await room.update({ round: room.round + 1, stage: next });
