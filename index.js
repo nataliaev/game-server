@@ -10,7 +10,7 @@ const databaseUrl =
   "postgres://postgres:secret@localhost:5432/postgres";
 const db = new Sequelize(databaseUrl);
 
-db.sync({ force: false }).then(() => {
+db.sync({ force: true }).then(() => {
   console.log("Database synced");
 });
 
@@ -26,7 +26,7 @@ const User = db.define("user", {
   password: {
     type: Sequelize.STRING,
     allowNull: false
-  }
+  },
 });
 
 const Room = db.define("room", {
