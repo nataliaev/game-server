@@ -82,12 +82,10 @@ app.post("/choice", async (request, response) => {
 
   const room = await Room.findByPk(roomId);
 
-  let entity;
-
   if (room.status === "started") {
     const choices = await Room.findOne({ where: { id: room.id, round: room.round }, include: [User, Choice] });
 
-    entity = await Choice.create({ userId, roomId, value, round: room.round });
+    await Choice.create({ userId, roomId, value, round: room.round });
 
     if (choices.choices.length) {
       const [other] = choices.choices;
@@ -113,7 +111,7 @@ app.post("/choice", async (request, response) => {
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(entity);
+  response.send(rooms);
 });
 
 app.post("/rooms", async (request, response) => {
@@ -128,7 +126,7 @@ app.post("/rooms", async (request, response) => {
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(room);
+  response.send(rooms);
 });
 
 app.put("/rooms/:roomId", async (request, response) => {
