@@ -155,14 +155,12 @@ app.post("/users", async (request, response) => {
     password: bcrypt.hashSync(request.body.password, 10)
   });
 
-  const rooms = await Room.findAll({ include: [User, Choice] })
-
-  const data = JSON.stringify(rooms);
+  const data = JSON.stringify(user);
 
   stream.updateInit(data);
   stream.send(data);
 
-  response.send(rooms);
+  response.send(user);
 });
 
 const port = process.env.PORT || 5000;
