@@ -152,8 +152,34 @@ app.put("/rooms/:roomId", async (request, response) => {
       { roomId: request.params.roomId },
       { where: { id: userId } }
     );
-  } else if (room.stage === 10 || room.stage === 0) {
-    await Room.update({ stage: 5, round: 1 }, { where: { id: room.id } });
+  }
+
+  const rooms = await Room.findAll({ include: [User, Choice] });
+
+  const data = JSON.stringify(rooms);
+
+  stream.updateInit(data);
+  stream.send(data);
+
+  response.send(rooms);
+});
+
+app.put("/users/:id", async (request, response) => {
+  console.log(request.params.id);
+
+  const { userId, roomId } = request.body;
+
+  await User.update(
+    { roomId: null },
+    { where: { id: userId } }
+  );
+
+  const room = await Room.findByPk(roomId, {
+    include: [User, Choice]
+  });
+
+  if(room.users.length === 0) {
+    await Room.destroy({where: {id: roomId}})
   }
 
   const rooms = await Room.findAll({ include: [User, Choice] });
