@@ -27,11 +27,22 @@ const User = db.define("user", {
   password: {
     type: Sequelize.STRING,
     allowNull: false
+  },
+  won: {
+    type: Sequelize.INTEGER,
+    defaultValue: 0
+  },
+  failed: {
+    type: Sequelize.INTEGER,
+    defaultValue: 0
   }
 });
 
 const Room = db.define("room", {
-  name: Sequelize.STRING,
+  name: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
   stage: {
     type: Sequelize.INTEGER,
     defaultValue: 5
@@ -43,6 +54,10 @@ const Room = db.define("room", {
   status: {
     type: Sequelize.STRING,
     defaultValue: "joining"
+  },
+  type: {
+    type: Sequelize.INTEGER,
+    defaultValue: 1
   }
 });
 
@@ -165,12 +180,13 @@ app.put("/rooms/:roomId", async (request, response) => {
 });
 
 app.put("/users/:id", async (request, response) => {
-  console.log(request.params.id);
-
-  const { userId, roomId } = request.body;
+  const { userId, roomId, won, failed } = request.body;
 
   await User.update(
-    { roomId: null },
+    { roomId: null,
+      won: won,
+      failed: failed 
+    },
     { where: { id: userId } }
   );
 
@@ -254,7 +270,9 @@ app.post("/logins", (req, res) => {
           res.send({
             jwt: toJWT({ userId: entity.id }),
             name: entity.name,
-            id: entity.id
+            id: entity.id,
+            won: entity.won,
+            failed: entity.failed
           });
         } else {
           res.status(400).send({
@@ -270,6 +288,12 @@ app.post("/logins", (req, res) => {
       });
   }
 });
+
+app.get("/users/:id", async (request, response) => {
+  const user = await User.findByPk(request.params.id);
+
+  response.send(user);
+})
 
 const port = process.env.PORT || 5000;
 
