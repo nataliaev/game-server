@@ -215,7 +215,14 @@ app.post("/users", async (request, response) => {
     password: bcrypt.hashSync(request.body.password, 10)
   });
 
-  response.send(user);
+  response.send({
+    user :
+    {jwt: toJWT({ userId: user.id }),
+    name: user.name,
+    id: user.id,
+    won: user.won,
+    failed: user.failed}
+  });
 });
 
 function auth(req, res, next) {
