@@ -259,7 +259,7 @@ app.post("/logins", (req, res) => {
       .then(entity => {
         if (!entity) {
           res.status(400).send({
-            message: "User with that email does not exist"
+            message: "User with that name does not exist"
           });
         }
 
@@ -268,11 +268,12 @@ app.post("/logins", (req, res) => {
           // 3. if the password is correct, return a JWT with the userId of the user (user.id)
 
           res.send({
-            jwt: toJWT({ userId: entity.id }),
+            user :
+            {jwt: toJWT({ userId: entity.id }),
             name: entity.name,
             id: entity.id,
             won: entity.won,
-            failed: entity.failed
+            failed: entity.failed}
           });
         } else {
           res.status(400).send({
