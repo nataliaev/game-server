@@ -16,7 +16,7 @@
 
 ```
 > git clone git@github.com:nataliaev/geme-server.git
-> cd geme-server
+> cd game-server
 > npm install
 > node index.js
 ```
